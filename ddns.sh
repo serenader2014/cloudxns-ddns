@@ -9,6 +9,10 @@ fi
 
 . "$CONFIG"
 
+if [ -f "$LAST_IP_FILE" ];then
+    . "$LAST_IP_FILE"
+fi
+
 IP_LIST=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
 
 REAL_IP=$(curl -s https://api.ipify.org)
@@ -19,6 +23,18 @@ do
     public_ip="$ip"
   fi
 done
+
+if [ "$public_ip" == "" ]; then
+  echo "ERROR! No public ip"
+  exit 1
+fi
+
+
+if [ "$public_ip" == "$LAST_IP" ];then
+    echo "$(date) -- Already updated."
+    exit 0
+fi
+
 
 URL_D="https://www.cloudxns.net/api2/domain"
 DATE=$(date)
@@ -45,6 +61,7 @@ echo "$RESULT"
 
 if [ "$(printf "%s" "$RESULT"|grep -c -o "message\":\"success\"")" = 1 ];then
     echo "$(date) -- Update success"
+    echo "LAST_IP=\"$public_ip\"" > "$LAST_IP_FILE"
 else
     echo "$(date) -- Update failed"
 fi
